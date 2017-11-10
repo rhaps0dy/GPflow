@@ -14,6 +14,8 @@
 
 
 from gpflow.misc import get_attribute
+from gpflow import settings
+import tensorflow as tf
 
 
 class AutoFlow:
@@ -41,3 +43,36 @@ class AutoFlow:
             keys = [attr for attr in obj.__dict__ if attr.startswith(prefix)]
             for key in keys:
                 delattr(obj, key)
+
+
+class TensorType:
+    """
+    Represents the type of a tensor, that is, its data type and shape. Its
+    purpose is to create `tf.placeholder`s for `AutoFlow`. Can contain
+    additional arguments to pass to the creation of the placeholder.
+
+    It is necessary to stop `tf.python.utils.nest.flatten` from destructuring
+    the information about placeholder types.
+    """
+    def __init__(self, dtype, shape=None, dims=None, **kwargs):
+        """
+        Can specify shape of tensor either by an integer giving the number
+        of dimensions, using `dims`, or a list, using `shape`.
+
+        `dtype` can be a TensorFlow type, or the `float` class. If it is
+        `float`, then the data type is `gpflow.settings.tf_float`.
+        """
+        if dtype is float:
+            dtype = settings.tf_float
+
+        if shape is None:
+            if dims is not None:
+                shape = [None]*dims
+        else:
+            assert dims is None, ("It is redundant to specify both shape and "
+                                  "number of dimensions.")
+        self._args = (dtype, shape)
+        self._kwargs = kwargs
+
+    def placeholder(self):
+        return tf.placeholder(*self._args, **self._kwargs)

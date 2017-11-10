@@ -16,6 +16,7 @@ import functools
 import contextlib
 
 import tensorflow as tf
+from tensorflow.python.util import nest
 
 from .core.base import GPflowError
 from .core.base import Build
@@ -100,7 +101,9 @@ def _params_as_tensors_exit(obj, previous):
 
 
 def _setup_storage(store, *args, **_kwargs):
-    store['arguments'] = [tf.placeholder(*arg) for arg in args]
+    types = nest.flatten(args)
+    phs = [tt.placeholder() for tt in types]
+    store['arguments'] = nest.pack_sequence_as(args, phs)
 
 
 def _name_scope_name(obj, name):
