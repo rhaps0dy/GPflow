@@ -16,6 +16,7 @@
 from gpflow.misc import get_attribute
 from gpflow import settings
 import tensorflow as tf
+from tensorflow.python.util import nest
 
 
 class AutoFlow:
@@ -76,3 +77,9 @@ class TensorType:
 
     def placeholder(self):
         return tf.placeholder(*self._args, **self._kwargs)
+
+    @staticmethod
+    def make_structure(structure):
+        types = nest.flatten(structure)
+        phs = [tt.placeholder() for tt in types]
+        return nest.pack_sequence_as(structure, phs)
