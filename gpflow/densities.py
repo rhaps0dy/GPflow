@@ -15,6 +15,7 @@
 
 import tensorflow as tf
 import numpy as np
+import warnings
 
 
 from . import settings
@@ -71,18 +72,32 @@ def laplace(mu, sigma, y):
 
 def multivariate_normal(x, mu, L):
     """
-    L is the Cholesky decomposition of the covariance.
+    Computes the log-density of a multivariate normal.
+    :param x  : Dx1 or DxN sample(s) for which we want the density
+    :param mu : Dx1 or DxN mean(s) of the normal distribution
+    :param L  : DxD Cholesky decomposition of the covariance matrix
+    :return p : (1,) or (N,) vector of log densities for each of the N x's and/or mu's
 
-    x and mu are either vectors (ndim=1) or matrices. In the matrix case, we
-    assume independence over the *columns*: the number of rows must match the
-    size of L.
+    x and mu are either vectors or matrices. If both are vectors (N,1):
+    p[0] = log pdf(x) where x ~ N(mu, LL^T)
+    If at least one is a matrix, we assume independence over the *columns*:
+    the number of rows must match the size of L. Broadcasting behaviour:
+    p[n] = log pdf of:
+    x[n] ~ N(mu, LL^T) or x ~ N(mu[n], LL^T) or x[n] ~ N(mu[n], LL^T)
     """
+    if x.shape.ndims is None:
+        warnings.warn('Shape of x must be 2D at computation.')
+    elif x.shape.ndims != 2:
+        raise ValueError('Shape of x must be 2D.')
+    if mu.shape.ndims is None:
+        warnings.warn('Shape of mu may be unknown or not 2D.')
+    elif mu.shape.ndims != 2:
+        raise ValueError('Shape of mu must be 2D.')
+        
     d = x - mu
     alpha = tf.matrix_triangular_solve(L, d, lower=True)
-    num_col = 1 if tf.rank(x) == 1 else tf.shape(x)[1]
-    num_col = tf.cast(num_col, settings.float_type)
-    num_dims = tf.cast(tf.shape(x)[0], settings.float_type)
-    ret = - 0.5 * num_dims * num_col * np.log(2 * np.pi)
-    ret += - num_col * tf.reduce_sum(tf.log(tf.matrix_diag_part(L)))
-    ret += - 0.5 * tf.reduce_sum(tf.square(alpha))
-    return ret
+    num_dims = tf.cast(tf.shape(d)[0], L.dtype)
+    p = - 0.5 * tf.reduce_sum(tf.square(alpha), 0)
+    p -= 0.5 * num_dims * np.log(2 * np.pi)
+    p -= tf.reduce_sum(tf.log(tf.matrix_diag_part(L)))
+    return p
