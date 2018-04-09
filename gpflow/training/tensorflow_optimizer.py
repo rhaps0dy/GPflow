@@ -118,19 +118,23 @@ class _TensorFlowOptimizer(optimizer.Optimizer):
             opt.model.anchor(session)
 
     def _initialize_optimizer(self, session, var_list):
-        """
-        TODO(@awav): AdamOptimizer creates beta1 and beta2 variables which are
-        not included in slots.
-        """
-        def get_optimizer_slots():
-            for name in self.optimizer.get_slot_names():
-                for var in var_list:
-                    slot = self.optimizer.get_slot(var, name)
-                    if slot is not None:
-                        yield slot
-        extra_vars = [v for v in self.optimizer.__dict__.values() if isinstance(v, tf.Variable)]
-        optimizer_vars = list(get_optimizer_slots())
-        full_var_list = list(set(optimizer_vars + extra_vars))
+        try:
+            # The right way to get this in TensorFlow 1.5+
+            full_var_list = optimizer.variables()
+        except AttributeError:
+            def get_optimizer_slots():
+                for name in self.optimizer.get_slot_names():
+                    for var in var_list:
+                        slot = self.optimizer.get_slot(var, name)
+                        if slot is not None:
+                            yield slot
+            # Preserve compatibility with TensorFlow 1.4
+            extra_vars = [v for v in self.optimizer.__dict__.values()
+                          if isinstance(v, tf.Variable)]
+            optimizer_vars = list(get_optimizer_slots())
+            if isinstance(self.optimizer, tf.train.AdamOptimizer):
+                optimizer_vars.extend(self.optimizer._get_beta_accumulators())
+            full_var_list = list(set(optimizer_vars + extra_vars))
         misc.initialize_variables(full_var_list, session=session, force=False)
 
     @property
