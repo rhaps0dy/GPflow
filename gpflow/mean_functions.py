@@ -48,7 +48,7 @@ class Linear(MeanFunction):
     """
     y_i = A x_i + b
     """
-    def __init__(self, A=None, b=None):
+    def __init__(self, A=None, b=None, Atransform=None):
         """
         A is a matrix which maps each element of X to Y, b is an additive
         constant.
@@ -59,7 +59,9 @@ class Linear(MeanFunction):
         A = np.ones((1, 1)) if A is None else A
         b = np.zeros(1) if b is None else b
         MeanFunction.__init__(self)
-        self.A = Parameter(np.atleast_2d(A), dtype=settings.float_type)
+        if Atransform is not None:
+            self.A = Parameter(np.atleast_2d(A), dtype=settings.float_type,
+                               transform=Atransform)
         self.b = Parameter(b, dtype=settings.float_type)
 
     @params_as_tensors
