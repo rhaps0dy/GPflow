@@ -98,7 +98,7 @@ def base_conditional(Kmn, Kmm, Knn, f, *, full_cov=False, q_sqrt=None, white=Fal
 
     # another backsubstitution in the unwhitened case
     if not white:
-        A = tf.matrix_triangular_solve(tf.transpose(Lm), A, lower=False)
+        A = tf.matrix_triangular_solve(Lm, A, lower=True, adjoint=True)
 
     # construct the conditional mean
     fmean = tf.matmul(A, f, transpose_a=True)
