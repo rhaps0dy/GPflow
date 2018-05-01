@@ -44,9 +44,9 @@ class ScipyOptimizer(optimizer.Optimizer):
         session = model.enquire_session(session)
         with session.as_default():
             var_list = self._gen_var_list(model, var_list)
-            options = dict(options=kwargs)
             optimizer_kwargs = self._optimizer_kwargs.copy()
-            optimizer_kwargs.update(options)
+            if 'options' in optimizer_kwargs:
+                optimizer_kwargs['options'].update(kwargs)
             objective = model.objective
             optimizer = external_optimizer.ScipyOptimizerInterface(
                 objective, var_list=var_list, **optimizer_kwargs)
