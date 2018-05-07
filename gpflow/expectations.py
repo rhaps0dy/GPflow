@@ -281,7 +281,7 @@ def _expectation(p, kern, feat, none1, none2, nghp=None):
         sqrt_det_L_plus_Xcov = tf.exp(tf.reduce_sum(tf.log(tf.matrix_diag_part(chol_L_plus_Xcov)), axis=1))
         determinants = sqrt_det_L / sqrt_det_L_plus_Xcov  # N
 
-        return kern.variance * (determinants[:, None] * exponent_mahalanobis)
+        return kern.variance * (determinants[:, None] * exponent_mahalanobis), chol_L_plus_Xcov
 
 
 @dispatch(Gaussian, mean_functions.Identity, type(None), kernels.RBF, InducingPoints)
@@ -417,8 +417,8 @@ def _expectation(p, kern1, feat1, kern2, feat2, nghp=None):
         # Compute sqrt(self.K(Z)) explicitly to prevent automatic gradient from
         # being NaN sometimes, see pull request #615
         kernel_sqrt = tf.exp(-0.25 * kern.square_dist(Z, None))
-        return kern.variance ** 2 * kernel_sqrt * \
-               tf.reshape(dets, [N, 1, 1]) * exponent_mahalanobis
+        return (kern.variance ** 2 * kernel_sqrt *
+                tf.reshape(dets, [N, 1, 1]) * exponent_mahalanobis, C, C_inv_mu, C_inv_z)
 
 
 # =============================== Linear Kernel ===============================
