@@ -167,7 +167,8 @@ def uncertain_conditional(Xnew_mu, Xnew_var, feat, kern, q_mu, q_sqrt, *,
 
     q_sqrt_r = tf.matrix_band_part(q_sqrt, -1, 0)  # D x M x M
 
-    eKuf = tf.transpose(expectation(pXnew, (kern, feat))) # M x N (psi1)
+    eKuf_T, *_ = expectation(pXnew, (kern, feat))
+    eKuf = tf.transpose(eKuf_T) # M x N (psi1)
     Kuu = feat.Kuu(kern, jitter=settings.numerics.jitter_level)  # M x M
     Luu = tf.cholesky(Kuu)  # M x M
 
@@ -180,7 +181,7 @@ def uncertain_conditional(Xnew_mu, Xnew_var, feat, kern, q_mu, q_sqrt, *,
     fmean = tf.matmul(Li_eKuf, q_mu, transpose_a=True)
 
     eKff = expectation(pXnew, kern)  # N (psi0)
-    eKuffu = expectation(pXnew, (kern, feat), (kern, feat)) # N x M x M (psi2)
+    eKuffu, *_ = expectation(pXnew, (kern, feat), (kern, feat)) # N x M x M (psi2)
     Luu_tiled = tf.tile(Luu[None, :, :], [num_data, 1, 1])  # remove this line, once issue 216 is fixed
     Li_eKuffu_Lit = tf.matrix_triangular_solve(Luu_tiled, tf.matrix_transpose(eKuffu), lower=True)
     Li_eKuffu_Lit = tf.matrix_triangular_solve(Luu_tiled, tf.matrix_transpose(Li_eKuffu_Lit), lower=True)  # N x M x M
