@@ -17,6 +17,7 @@ import sys
 import tensorflow as tf
 
 from . import optimizer
+from . import AMSGrad
 from .. import misc
 from ..actions import Optimization
 from ..models.model import Model
@@ -154,7 +155,7 @@ def _get_registered_optimizer(name):
 
 
 def _register_optimizer(name, optimizer_type):
-    if optimizer_type.__base__ is not tf.train.Optimizer:
+    if not issubclass(optimizer_type, tf.train.Optimizer):
         raise ValueError('Wrong TensorFlow optimizer type passed: "{0}".'
                          .format(optimizer_type))
     gp_optimizer = type(name, (_TensorFlowOptimizer, ), {})
@@ -168,6 +169,6 @@ for key, train_type in tf.train.__dict__.items():
     suffix = 'Optimizer'
     if key != suffix and key.endswith(suffix):
         _register_optimizer(key, train_type)
-
+_register_optimizer("AMSGradOptimizer", AMSGrad.AMSGradOptimizer)
 
 __all__ = list(_REGISTERED_TENSORFLOW_OPTIMIZERS.keys())
